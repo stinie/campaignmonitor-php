@@ -1,7 +1,7 @@
 <?php
 /**
 * @package CampaignMonitor
-* @version 1.1
+* @version 1.1.1
 * @author Kaiser Shahid <www.qaiser.net>
 * @author Keri Henare (Pixel Fusion) <www.pixelfusion.co.nz>
 * @license http://opensource.org/licenses/lgpl-3.0.html GNU Lesser General Public License (LGPLv3)
