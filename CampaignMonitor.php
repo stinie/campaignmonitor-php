@@ -302,9 +302,10 @@ class CampaignMonitor
 		if ( !is_array( $fields ) )
 			$fields = array();
 
-		$_fields = array( 'SubscriberCustomField' => array() );
+		$_fields = array(/* 'SubscriberCustomField' => array() */);
 		foreach ( $fields as $k => $v )
-			$_fields['SubscriberCustomField'][] = array( 'Key' => $k, 'Value' => $v );
+			//$_fields['SubscriberCustomField'][] = array( 'Key' => $k, 'Value' => $v );
+			$_fields[] = array( 'Key' => $k, 'Value' => $v );
 
 		return $this->makeCall( $action
 			, array(
@@ -361,7 +362,7 @@ class CampaignMonitor
 	}
 
 	/**
-	* subscriberUnscribe()
+	* subscriberUnsubscribe()
 	* @param string $email Email address.
 	* @param int $list_id (Optional) A valid List ID to check against. If not given, the default class property is used.
 	* @param boolean $check_subscribed If true, does the Subscribers.GetIsSubscribed API method instead.
@@ -601,6 +602,8 @@ class CampaignMonitor
 		    $k = 'int';
 		  elseif ( is_int( $k ) && is_string( $v ) )
 		    $k = 'string';
+		  elseif ( is_int( $k ) && is_array( $v ) )
+		    $k = 'SubscriberCustomField';
 
 			if ( !is_array( $v ) )
 				$buff .= "$indent<$k>" . htmlentities( $v ) . "</$k>\n";
@@ -721,6 +724,11 @@ class CampaignMonitor
   public function campaignSend( $send_date = 'Immediately', $confirmation_email, $campaign_id = null )
   {
     if ( !$campaign_id ) $campaign_id = $this->campaign_id;
+    
+    if (strtotime($send_date) <= time() || $send_date = 'Immediately')
+      $senddate = 'Immediately';
+    else
+      $senddate = date('Y-m-d H:i:s', strtotime($senddate)); // YYYY-MM-DD HH:MM:SS
     
     if ( $send_date == 'Immediately')
     {
