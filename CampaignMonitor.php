@@ -1,7 +1,7 @@
 <?php
 /**
 * @package CampaignMonitor
-* @version 1.1.1
+* @version 1.1.2
 * @author Kaiser Shahid <www.qaiser.net>
 * @author Keri Henare (Pixel Fusion) <www.pixelfusion.co.nz>
 * @license http://opensource.org/licenses/lgpl-3.0.html GNU Lesser General Public License (LGPLv3)
@@ -44,19 +44,21 @@ class CampaignMonitor
 		, $show_response_headers = 0
 	;
 
-	public function __construct( $api = null, $client = null, $campaign = null, $list = null, $method = 'get' )
+	public function __construct( $api = null, $client = null, $campaign = null, $list = null, $method = 'get', $url = 'http://api.createsend.com/api/')
 	{
 		$this->api = $api;
 		$this->client_id = $client;
 		$this->campaign_id = $campaign;
 		$this->list_id = $list;
 		$this->method = $method;
+		$this->url = $url;
 	}
 
 	public function makeCall( $action = '', $options = array() )
 	{
 		if ( !$action ) return null;
-		$url = 'http://app.campaignmonitor.com/api/api.asmx';
+		
+		$url = $this->url . 'api.asmx';
 
 		// TODO: like facebook's client, allow for get/post through the file wrappers
 		// if curl isn't available. (or maybe have curl-emulating functions defined 
@@ -71,22 +73,16 @@ class CampaignMonitor
 		if ( $this->method == 'soap' )
 		{
 			$options['header'][] = 'Content-Type: text/xml; charset=utf-8';
-			$options['header'][] = 'SOAPAction: "http://app.campaignmonitor.com/api/' . $action . '"';
+			$options['header'][] = 'SOAPAction: "' . $this->url . $action . '"';
 
-			$postdata = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
-			$postdata .= "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
-			$postdata .= " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"";
-			$postdata .= " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n";
-			$postdata .= "<soap:Body>\n";
-			$postdata .= "	<{$action} xmlns=\"http://app.campaignmonitor.com/api/\">\n";
-			$postdata .= "		<ApiKey>{$this->api}</ApiKey>\n";
+			$postdata  = '<?xml version="1.0" encoding="utf-8"?>'
+			           . '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+			           . '<soap:Body><' . $action . ' xmlns="' . $this->url . '"><ApiKey>' . $this->api . '</ApiKey>';
 
 			if ( isset( $options['params'] ) )
-				$postdata .= CampaignMonitor::convertArrayToXML( $options['params'], "\t\t" );
+				$postdata .= CampaignMonitor::convertArrayToXML( $options['params'], '' );
 
-			$postdata .= "	</{$action}>\n";
-			$postdata .= "</soap:Body>\n";
-			$postdata .= "</soap:Envelope>";
+			$postdata .= '</' . $action . '></soap:Body></soap:Envelope>';
 
 			curl_setopt( $ch, CURLOPT_POST, 1 );
 			curl_setopt( $ch, CURLOPT_POSTFIELDS, $postdata );
@@ -939,4 +935,3 @@ this should output:
 // basically, in order to have multiple ParentElement elements, the
 // corresponding value of that key needs to be a 0-indexed array.
 */
-?>
