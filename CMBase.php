@@ -122,7 +122,7 @@ class CMBase
 	{
 		// NEW [2008-06-24]: switch to soap automatically for these calls
 		$old_method = $this->method;
-		if ( $action == 'Subscriber.AddWithCustomFields' || $action == 'Subscriber.AddAndResubscribeWithCustomFields' )
+		if ( $action == 'Subscriber.AddWithCustomFields' || $action == 'Subscriber.AddAndResubscribeWithCustomFields' || $action == 'Campaign.Create')
 			$this->method = 'soap';
 		
 		if ( !$action ) return null;
