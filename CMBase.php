@@ -1085,7 +1085,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetSummary( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetSummary' );
+		return $this->campaignGeneric( 'GetSummary', $campaign_id );
 	}
 	
 	/**
@@ -1096,7 +1096,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetOpens( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetOpens' );
+		return $this->campaignGeneric( 'GetOpens', $campaign_id );
 	}
 	
 	/**
@@ -1107,7 +1107,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetBounces( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetBounces' );
+		return $this->campaignGeneric( 'GetBounces', $campaign_id );
 	}
 	
 	/**
@@ -1118,7 +1118,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetSubscriberClicks( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetSubscriberClicks' );
+		return $this->campaignGeneric( 'GetSubscriberClicks', $campaign_id );
 	}
 	
 	/**
@@ -1129,7 +1129,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetUnsubscribes( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetUnsubscribes' );
+		return $this->campaignGeneric( 'GetUnsubscribes', $campaign_id );
 	}
 	
 	/**
@@ -1140,7 +1140,7 @@ class CampaignMonitor extends CMBase
 	
 	function campaignGetLists( $campaign_id = null )
 	{
-		return $this->campaignGeneric( $campaign_id, 'GetLists' );
+		return $this->campaignGeneric( 'GetLists', $campaign_id );
 	}
 	
 	/**
@@ -1164,20 +1164,26 @@ class CampaignMonitor extends CMBase
 		if ( $client_id == null )
 			$client_id = $this->client_id;
 		
-		$_subListIds = array( 'int' => array() );
-		if ( is_array( $subscriberListIds ) )
+		if ($subscriberListIds != "")
 		{
-			foreach ( $subscriberListIds as $lid )
+			$_subListIds = array( 'string' => array() );
+			if ( is_array( $subscriberListIds ) )
 			{
-				$_subListIds['int'][] = $lid;
+				foreach ( $subscriberListIds as $lid )
+				{
+					$_subListIds['string'] = $lid;
+				}
 			}
 		}
 		
-		$_seg = array( 'List' => array() );
-		if ( is_array( $listSegments ) )
+		if ($listSegments != "")
 		{
-			foreach ( $listSegments as $seg )
-				$_seg['List'][] = $seg;
+			$_seg = array( 'List' => array() );
+			if ( is_array( $listSegments ) )
+			{
+				foreach ( $listSegments as $seg )
+					$_seg['List'][] = $seg;
+			}
 		}
 		
 		return $this->makeCall( 'Campaign.Create', array(
