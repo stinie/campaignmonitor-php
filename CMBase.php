@@ -409,12 +409,14 @@ class CMBase
 	
 	function subscriberAddRedundant( $email, $name, $list_id = null )
 	{
-		$added = $this->subscriberAdd( $email, $name, $list_id );
-		if ( $added && $added['Code'] == '0' )
+		$added = $this->subscriberAdd( $email, $name, $list_id );        
+	        
+		if ( $added && $added['Result']['Code'] == '204' )
 		{
-			$subscribed = $this->subscribersGetIsSubscribed( $email, $list_id );
+			$subscribed = $this->subscribersGetIsSubscribed( $email, $list_id );    
+	    
 			// Must have unsubscribed, so resubscribe
-			if ( $subscribed == 'False' )
+			if ( $subscribed['anyType'] == 'False' )
 			{
 				// since we're internal, we'll just call the method with full parameters rather
 				// than go through a secondary wrapper function.
