@@ -175,7 +175,7 @@ class CMBase
 			if ( isset( $options['params'] ) )
 			{
 				foreach ( $options['params'] as $k => $v )
-					$postdata .= '&' . $k . '=' . urlencode( $v );
+					$postdata .= '&' . $k . '=' .rawurlencode(utf8_encode($v));
 			}
 			
 			if ( $this->method == 'get' )
@@ -824,7 +824,7 @@ function array2xml( $arr, $indent = '', $escape = true )
 	foreach ( $arr as $k => $v )
 	{
 		if ( !is_array( $v ) )
-			$buff .= "$indent<$k>" . ($escape ? htmlentities( $v ) : $v ) . "</$k>\n";
+			$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</$k>\n";
 		else
 		{
 			/*
@@ -840,7 +840,7 @@ function array2xml( $arr, $indent = '', $escape = true )
 					if ( is_array( $_v ) )
 				 		$buff .= "$indent<$k>\n" . array2xml( $_v, $indent . "\t", $escape ) . "$indent</$k>\n";
 					else
-						$buff .= "$indent<$k>" . ($escape ? htmlentities( $_v ) : $_v ) . "</$k>\n";
+						$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</$k>\n";
 				}
 			}
 			else
