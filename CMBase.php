@@ -191,7 +191,7 @@ class CMBase
 				//curl_setopt( $ch, CURLOPT_POSTFIELDS, $postdata );
 			}
 		}
-		
+					
 		$res = '';
 		
 		// WARNING: using fopen() does not recognize stream contexts in PHP 4.x, so
@@ -1038,6 +1038,111 @@ class CampaignMonitor extends CMBase
 	}
 	
 	/**
+	* @param int $client_id (Optional) A valid Client ID to check against. If not given, the default class property is used.
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-getsuppressionlist/
+	*/
+	function clientGetSuppressionList( $client_id = null )
+	{
+		return $this->clientGeneric( 'GetSuppressionList', $client_id );
+	}
+	
+	/**
+	* @param int $client_id (Optional) A valid Client ID to check against. If not given, the default class property is used.
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-getdetail/
+	*/
+	function clientGetDetail( $client_id = null )
+	{
+		return $this->clientGeneric( 'GetDetail', $client_id );
+	}
+	
+	/**
+	* @param string $companyName (CompanyName) Company name of the client to be added
+	* @param string $contactName (ContactName) Contact name of the client to be added
+	* @param string $emailAddress (EmailAddress) Email Address of the client to be added
+	* @param string $country (Country) Country of the client to be added
+	* @param string $timezone (Timezone) Timezone of the client to be added
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-create/
+	*/
+	function clientCreate( $companyName, $contactName, $emailAddress, $country, $timezone )
+	{
+		return $this->makeCall( 'Client.Create'
+			, array(
+				'params' => array(
+					'CompanyName' => $companyName
+					, 'ContactName' => $contactName
+					, 'EmailAddress' => $emailAddress
+					, 'Country' => $country
+					, 'Timezone' => $timezone
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $client_id (ClientID) ID of the client to be updated
+	* @param string $companyName (CompanyName) Company name of the client to be updated
+	* @param string $contactName (ContactName) Contact name of the client to be updated
+	* @param string $emailAddress (EmailAddress) Email Address of the client to be updated
+	* @param string $country (Country) Country of the client to be updated
+	* @param string $timezone (Timezone) Timezone of the client to be updated
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-create/
+	*/
+	function clientUpdateBasics( $client_id, $companyName, $contactName, $emailAddress, $country, $timezone )
+	{
+		return $this->makeCall( 'Client.UpdateBasics'
+			, array(
+				'params' => array(
+					'ClientID' => $client_id
+					, 'CompanyName' => $companyName
+					, 'ContactName' => $contactName
+					, 'EmailAddress' => $emailAddress
+					, 'Country' => $country
+					, 'Timezone' => $timezone
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $client_id (ClientID) ID of the client to be updated
+	* @param string $accessLevel (AccessLevel) AccessLevel of the client
+	* @param string $username (Username) Clients username
+	* @param string $password (Password) Password of the client
+	* @param string $billingType (BillingType) BillingType that the client will be set as
+	* @param string $currency (Currency) Currency that the client will pay in
+	* @param string $deliveryFee (DeliveryFee) Per campaign deliivery fee for the campaign
+	* @param string $costPerRecipient (CostPerRecipient) Per email fee for the client
+	* @param string $designAndSpamTestFee (DesignAndSpamTestFee) Amount the client will
+	*				be charged if they have access to send design/spam tests
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-updateaccessandbilling/
+	*/
+	function clientUpdateAccessAndBilling( $client_id, $accessLevel, $username, $password, $billingType, $currency, $deliveryFee, $costPerRecipient, $designAndSpamTestFee )
+	{
+		return $this->makeCall( 'Client.UpdateAccessAndBilling'
+			, array(
+				'params' => array(
+					'ClientID' => $client_id
+					, 'AccessLevel' => $accessLevel
+					, 'Username' => $username
+					, 'Password' => $password
+					, 'BillingType' => $billingType
+					, 'Currency' => $currency
+					, 'DeliveryFee' => $deliveryFee
+					, 'CostPerRecipient' => $costPerRecipient
+					, 'DesignAndSpamTestFee' => $designAndSpamTestFee
+				)
+			)
+		);
+	}
+	
+	
+	
+	/**
 	* @return mixed A parsed response from the server, or null if something failed.
 	* @see http://www.campaignmonitor.com/api/User.GetClients.aspx
 	*/
@@ -1055,6 +1160,26 @@ class CampaignMonitor extends CMBase
 	function userGetSystemDate()
 	{
 		return $this->makeCall( 'User.GetSystemDate' );
+	}
+	
+	/**
+	* @return string A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/user-gettimezones/
+	*/
+	
+	function userGetTimezones()
+	{
+		return $this->makeCall( 'User.GetTimezones' );
+	}
+	
+	/**
+	* @return string A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/user-getcountries/
+	*/
+	
+	function userGetCountries()
+	{
+		return $this->makeCall( 'User.GetCountries' );
 	}
 	
 	/**
@@ -1166,6 +1291,7 @@ class CampaignMonitor extends CMBase
 		if ( $client_id == null )
 			$client_id = $this->client_id;
 		
+		$_subListIds = '';
 		if ($subscriberListIds != "")
 		{
 			$_subListIds = array( 'string' => array() );
@@ -1178,6 +1304,7 @@ class CampaignMonitor extends CMBase
 			}
 		}
 		
+		$_seg = '';
 		if ($listSegments != "")
 		{
 			$_seg = array( 'List' => array() );
@@ -1222,6 +1349,158 @@ class CampaignMonitor extends CMBase
 				'CampaignID' => $campaign_id
 				, 'ConfirmationEmail' => $confirmEmail
 				, 'SendDate' => $sendDate
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $client_id (ClientID) ID of the client the list will be created for
+	* @param string $title (Title) Name of the new list
+	* @param string $unsubscribePage (UnsubscribePage) URL of the page users will be 
+	*				directed to when they unsubscribe from this list.
+	* @param string $confirmOptIn (ConfirmOptIn) If true, the user will be sent a confirmation
+	*				email before they are added to the list. If they click the link to confirm
+	*				their subscription they will be added to the list. If false, they will be
+	*				added automatically.
+	* @param string $confirmationSuccessPage (ConfirmationSuccessPage) URL of the page that
+	*				users will be sent to if they confirm their subscription. Only required when
+					$confirmOptIn is true.
+	* @see http://www.campaignmonitor.com/api/method/list-create/
+	*/
+	function listCreate( $client_id, $title, $unsubscribePage, $confirmOptIn, $confirmationSuccessPage )
+	{
+		if ( $confirmOptIn == 'false' )
+			$confirmationSuccessPage = '';
+			
+		return $this->makeCall( 'List.Create', array(
+			'params' => array(
+				'ClientID' => $client_id
+				, 'Title' => $title
+				, 'UnsubscribePage' => $unsubscribePage
+				, 'ConfirmOptIn' => $confirmOptIn
+				, 'ConfirmationSuccessPage' => $confirmationSuccessPage
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (List) ID of the list to be updated
+	* @param string $title (Title) Name of the new list
+	* @param string $unsubscribePage (UnsubscribePage) URL of the page users will be 
+	*				directed to when they unsubscribe from this list.
+	* @param string $confirmOptIn (ConfirmOptIn) If true, the user will be sent a confirmation
+	*				email before they are added to the list. If they click the link to confirm
+	*				their subscription they will be added to the list. If false, they will be
+	*				added automatically.
+	* @param string $confirmationSuccessPage (ConfirmationSuccessPage) URL of the page that
+	*				users will be sent to if they confirm their subscription. Only required when
+					$confirmOptIn is true.
+	* @see http://www.campaignmonitor.com/api/method/list-update/
+	*/
+	function listUpdate( $list_id, $title, $unsubscribePage, $confirmOptIn, $confirmationSuccessPage )
+	{
+		if ( $confirmOptIn == 'false' )
+			$confirmationSuccessPage = '';
+			
+		return $this->makeCall( 'List.Update', array(
+			'params' => array(
+				'ListID' => $list_id
+				, 'Title' => $title
+				, 'UnsubscribePage' => $unsubscribePage
+				, 'ConfirmOptIn' => $confirmOptIn
+				, 'ConfirmationSuccessPage' => $confirmationSuccessPage
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (List) ID of the list to be deleted
+	* @see http://www.campaignmonitor.com/api/method/list-delete/
+	*/
+	function listDelete( $list_id )
+	{			
+		return $this->makeCall( 'List.Delete', array(
+			'params' => array(
+				'ListID' => $list_id
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (List) ID of the list to be deleted
+	* @see http://www.campaignmonitor.com/api/method/list-getdetail/
+	*/
+	function listGetDetail( $list_id )
+	{			
+		return $this->makeCall( 'List.GetDetail', array(
+			'params' => array(
+				'ListID' => $list_id
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (ListID) A valid list ID to check against. 
+	* @param string $fieldName (FieldName) Name of the new custom field
+	* @param string $dataType (DataType) Data type of the field. Options are Text, Number, 
+	*				MultiSelectOne, or MultiSelectMany
+	* @param string $Options (Options) The available options for a multi-valued custom field. 
+	*				Options should be separated by a double pipe “||”. This field must be null 
+	*				for Text and Number custom fields
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/list-createcustomfield/
+	*/
+	
+	function listCreateCustomField( $list_id, $fieldName, $dataType, $options )
+	{
+		if ( $dataType == 'Text' || $dataType == 'Number' )
+			$options = null;
+			
+		return $this->makeCall( 'List.CreateCustomField', array(
+			'params' => array(
+				'ListID' => $list_id
+				, 'FieldName' => $fieldName
+				, 'DataType' => $dataType
+				, 'Options' => $options
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (ListID) A valid list ID to check against. 
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/list-getcustomfields/
+	*/
+	
+	function listGetCustomFields( $list_id )
+	{			
+		return $this->makeCall( 'List.GetCustomFields', array(
+			'params' => array(
+				'ListID' => $list_id
+				)
+			)
+		);
+	}
+	
+	/**
+	* @param int $list_id (ListID) A valid list ID to check against. 
+	* @param int $key (Key) The Key of the field we want to delete. 
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/list-deletecustomfield/
+	*/
+	
+	function listDeleteCustomField( $list_id, $key )
+	{		
+		return $this->makeCall( 'List.DeleteCustomField', array(
+			'params' => array(
+				'ListID' => $list_id
+				, 'Key' => $key
 				)
 			)
 		);
