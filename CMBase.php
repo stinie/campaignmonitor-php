@@ -1046,6 +1046,16 @@ class CampaignMonitor extends CMBase
 	{
 		return $this->clientGeneric( 'GetSuppressionList', $client_id );
 	}
+
+	/**
+	* @param int $client_id (Optional) A valid Client ID to check against. If not given, the default class property is used.
+	* @return mixed A parsed response from the server, or null if something failed.
+	* @see http://www.campaignmonitor.com/api/method/client-gettemplates/
+	*/
+	function clientGetTemplates( $client_id = null )
+	{
+		return $this->clientGeneric( 'GetTemplates', $client_id );
+	}
 	
 	/**
 	* @param int $client_id (Optional) A valid Client ID to check against. If not given, the default class property is used.
@@ -1503,6 +1513,74 @@ class CampaignMonitor extends CMBase
 				, 'Key' => $key
 				)
 			)
+		);
+	}
+	
+	/**
+	 * @param int $client_id (ClientID) ID of the client the template will be created for
+	 * @param string $template_name (TemplateName) Name of the new template
+	 * @param string $html_url (HTMLPageURL) URL of the HTML page you have created for the template
+	 * @param string $zip_url (ZipFileURL) URL of a zip file containing any other files required by the template
+	 * @param string $screenshot_url (ScreenshotURL) URL of a screenshot of the template
+	 * @see http://www.campaignmonitor.com/api/method/template-create/
+	 */
+	function templateCreate($client_id, $template_name, $html_url, $zip_url, $screenshot_url)
+	{
+		return $this->makeCall('Template.Create', array(
+			'params' => array(
+				'ClientID' => $client_id,
+				'TemplateName' => $template_name,
+				'HTMLPageURL' => $html_url,
+				'ZIPFileURL' => $zip_url,
+				'ScreenshotURL' => $screenshot_url
+			))
+		);
+	}
+	
+	/**
+	 * @param string $template_id (TemplateID) ID of the template whose details are being requested
+	 * @see http://www.campaignmonitor.com/api/method/template-getdetail/
+	 */
+	function templateGetDetail($template_id)
+	{
+		return $this->makeCall('Template.GetDetail', array(
+			'params' => array(
+				'TemplateID' => $template_id
+			))
+		);
+	}
+
+	/**
+	 * @param string $template_id (TemplateID) ID of the template to be updated
+	 * @param string $template_name (TemplateName) Name of the template
+	 * @param string $html_url (HTMLPageURL) URL of the HTML page you have created for the template
+	 * @param string $zip_url (ZipFileURL) URL of a zip file containing any other files required by the template
+	 * @param string $screenshot_url (ScreenshotURL) URL of a screenshot of the template
+	 * @see http://www.campaignmonitor.com/api/method/template-update/
+	 */
+	function templateUpdate($template_id, $template_name, $html_url, $zip_url, $screenshot_url)
+	{
+		return $this->makeCall('Template.Update', array(
+			'params' => array(
+				'TemplateID' => $template_id,
+				'TemplateName' => $template_name,
+				'HTMLPageURL' => $html_url,
+				'ZIPFileURL' => $zip_url,
+				'ScreenshotURL' => $screenshot_url
+			))
+		);
+	}
+
+	/**
+	 * @param string $template_id (TemplateID) ID of the template to be deleted
+	 * @see http://www.campaignmonitor.com/api/method/template-delete/
+	 */
+	function templateDelete($template_id)
+	{
+		return $this->makeCall('Template.Delete', array(
+			'params' => array(
+				'TemplateID' => $template_id
+			))
 		);
 	}
 }
