@@ -2,7 +2,7 @@
 /**
 * LICENSE
 * -------------------
-* Copyright (c) 2007-2008, Kaiser Shahid <knitcore@yahoo.com>
+* Copyright (c) 2007-2009, Kaiser Shahid <knitcore@yahoo.com>
 * All rights reserved.
 *
 * This software is licensed under the BSD License:
@@ -50,7 +50,7 @@
 *
 * @package CampaignMonitorLib
 * @subpackage CMBase
-* @version 1.4.1
+* @version 1.4.2
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
 * @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
@@ -934,9 +934,9 @@ function array2xml( $arr, $indent = '', $escape = true )
 *
 * @package CampaignMonitorLib
 * @subpackage CampaignMonitor
-* @version 1.5
+* @version 1.4.2
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
-* @copyright 2007-2008
+* @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
 */
 
@@ -1375,7 +1375,7 @@ class CampaignMonitor extends CMBase
 			{
 				foreach ( $subscriberListIds as $lid )
 				{
-					$_subListIds['string'] = $lid;
+					$_subListIds['string'][] = $lid;
 				}
 			}
 		}
@@ -1429,7 +1429,18 @@ class CampaignMonitor extends CMBase
 			)
 		);
 	}
-	
+
+	/**
+	 * Delete a campaign.
+	 * @param $campaign_id The ID of the campaign to delete.
+	 * @return A Status code indicating success or failure.
+	 * @see http://www.campaignmonitor.com/api/method/campaign-delete/
+	 */
+	function campaignDelete($campaign_id)
+	{
+		return $this->campaignGeneric('Delete', $campaign_id);
+	}
+
 	/**
 	* @param int $client_id (ClientID) ID of the client the list will be created for
 	* @param string $title (Title) Name of the new list

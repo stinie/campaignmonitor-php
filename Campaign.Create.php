@@ -21,19 +21,19 @@ $subscriber_segments = "";
 
 //-------------------------------------------------------------------------------	
 	
-	$cm = new CampaignMonitor( $apikey );
-	
-	//Optional statement to include debugging information in the result
-	$cm->debug_level = 1;
-	
-	//This is the actual call to the method
-	$result = $cm->campaignCreate( $clientid, $campaign_name, $subject, $from_name, $from_email, $reply_email, $html_content, $text_content, $subscriber_listid, "" );
-	
-	echo '<br><br>';
-	print_r($result);
-	
-	
-	//Print out the debugging info
-	//print_r($cm);
+$cm = new CampaignMonitor( $apikey );
+
+//Optional statement to include debugging information in the result
+$cm->debug_level = 1;
+
+//This is the actual call to the method
+$result = $cm->campaignCreate( $clientid, $campaign_name, $subject, $from_name, $from_email, $reply_email, $html_content, $text_content, $subscriber_listid, "" );
+
+echo '<br><br>';
+print_r($result);
+
+
+//Print out the debugging info
+//print_r($cm);
 
 ?>
