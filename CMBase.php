@@ -2,7 +2,8 @@
 /**
 * LICENSE
 * -------------------
-* Copyright (c) 2007-2009, Kaiser Shahid <knitcore@yahoo.com>
+* Copyright (c) 2007-2009, Kaiser Shahid <knitcore@yahoo.com> and
+* Campaign Monitor <support@campaignmonitor.com>
 * All rights reserved.
 *
 * This software is licensed under the BSD License:
@@ -50,7 +51,7 @@
 *
 * @package CampaignMonitorLib
 * @subpackage CMBase
-* @version 1.4.2
+* @version 1.4.3
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
 * @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
@@ -152,7 +153,7 @@ class CMBase
 			$postdata .= "		<ApiKey>{$this->api}</ApiKey>\n";
 			
 			if ( isset( $options['params'] ) )
-				$postdata .= array2xml( $options['params'], "\t\t" );
+				$postdata .= $this->array2xml( $options['params'], "\t\t" );
 			
 			$postdata .= "	</{$action}>\n";
 			$postdata .= "</soap:Body>\n";
@@ -297,17 +298,259 @@ class CMBase
 		{
 			if ( $this->method == 'soap' )
 			{
-				$tmp = xml2array( $res, '/soap:Envelope/soap:Body' );
+				$tmp = $this->xml2array( $res, '/soap:Envelope/soap:Body' );
 				if ( !is_array( $tmp ) )
 					return $tmp;
 				else
 					return $tmp[$action.'Response'][$action.'Result'];
 			}
 			else
-				return xml2array($res);
+				return $this->xml2array($res);
 		}
 		else
 			return null;
+	}
+
+	/**
+	 * Convert the given XML $contents into a PHP array. Based on code from:
+	 * http://www.bin-co.com/php/scripts/xml2array/
+	 * @param $contents The XML to be converted.
+	 * @param $root The path of the root element within the XML at which 
+	 * conversion should occur.
+	 * @param $charset The character set to use.
+	 * @param $get_attributes 0 or 1. If this is 1 the function will get the 
+	 * attributes as well as the tag values - this results in a different array 
+	 * structure in the return value.
+	 * @param $priority Can be 'tag' or 'attribute'. This will change the structure
+	 * of the resulting array. For 'tag', the tags are given more importance.
+	 * @return A PHP array representing the XML $contents passed in
+	 */
+	function xml2array(
+		$contents, 
+		$root = '/',
+		$charset = 'utf-8',
+		$get_attributes = 0, 
+		$priority = 'tag') {
+	
+		if(!$contents)
+			return array();
+	
+	    if(!function_exists('xml_parser_create'))
+	        return array();
+	
+	    // Get the PHP XML parser
+	    $parser = xml_parser_create($charset);
+	
+	    // Attempt to find the last tag in the $root path and use this as the 
+	    // start/end tag for the process of extracting the xml
+		// Example input: '/soap:Envelope/soap:Body'
+	
+	    // Toggles whether the extraction of xml into the array actually occurs
+	    $extract_on = TRUE;
+	    $start_and_end_element_name = '';
+		$root_elements = explode('/', $root);
+		if ($root_elements != FALSE && 
+			!empty($root_elements)) {
+			$start_and_end_element_name = trim(end($root_elements));
+			if (!empty($start_and_end_element_name))
+				$extract_on = FALSE;
+		}
+	
+	    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8"); # http://minutillo.com/steve/weblog/2004/6/17/php-xml-and-character-encodings-a-tale-of-sadness-rage-and-data-loss
+	    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+	    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+	    xml_parse_into_struct($parser, trim($contents), $xml_values);
+	    xml_parser_free($parser);
+	
+	    if(!$xml_values) 
+	    	return;
+	
+	    $xml_array = array();
+	    $parents = array();
+	    $opened_tags = array();
+	    $arr = array();
+	
+	    $current = &$xml_array; // Reference
+	
+	    // Go through the tags.
+	    $repeated_tag_index = array(); // Multiple tags with same name will be turned into an array
+	    foreach($xml_values as $data) {
+	        unset($attributes,$value); // Remove existing values, or there will be trouble
+	
+	        // This command will extract these variables into the foreach scope
+	        // tag(string), type(string), level(int), attributes(array).
+	        extract($data);
+	
+	        if (!empty($start_and_end_element_name) && 
+	        	$tag == $start_and_end_element_name) {
+	        	// Start at the next element (if looking at the opening tag), 
+	        	// or don't process any more elements (if looking at the closing tag)...
+	        	$extract_on = !$extract_on;
+	        	continue;
+	        }
+	
+	        if (!$extract_on)
+	        	continue;
+	        
+	        $result = array();
+	        $attributes_data = array();
+	        
+	        if(isset($value)) {
+	            if($priority == 'tag') $result = $value;
+	            else $result['value'] = $value; //Put the value in a assoc array if we are in the 'Attribute' mode
+	        }
+	
+	        // Set the attributes too.
+	        if(isset($attributes) and $get_attributes) {
+	            foreach($attributes as $attr => $val) {
+	                if($priority == 'tag') $attributes_data[$attr] = $val;
+	                else $result['attr'][$attr] = $val; // Set all the attributes in a array called 'attr'
+	            }
+	        }
+	
+	        // See tag status and do the needed.
+	        if($type == "open") {// The starting of the tag '<tag>'
+	            $parent[$level-1] = &$current;
+	            if(!is_array($current) or (!in_array($tag, array_keys($current)))) { //Insert New tag
+	                $current[$tag] = $result;
+	                if($attributes_data) $current[$tag. '_attr'] = $attributes_data;
+	                $repeated_tag_index[$tag.'_'.$level] = 1;
+	                $current = &$current[$tag];
+	            } else { // There was another element with the same tag name
+	                if(isset($current[$tag][0])) { // If there is a 0th element it is already an array
+	                    $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
+	                    $repeated_tag_index[$tag.'_'.$level]++;
+	                } else { // This section will make the value an array if multiple tags with the same name appear together
+	                    $current[$tag] = array($current[$tag],$result); // This will combine the existing item and the new item together to make an array
+	                    $repeated_tag_index[$tag.'_'.$level] = 2;
+	                    
+	                    if(isset($current[$tag.'_attr'])) { // The attribute of the last(0th) tag must be moved as well
+	                        $current[$tag]['0_attr'] = $current[$tag.'_attr'];
+	                        unset($current[$tag.'_attr']);
+	                    }
+	                }
+	                $last_item_index = $repeated_tag_index[$tag.'_'.$level]-1;
+	                $current = &$current[$tag][$last_item_index];
+	            }
+	        } elseif($type == "complete") { // Tags that ends in 1 line '<tag />'
+	            // See if the key is already taken.
+	            if(!isset($current[$tag])) { //New Key
+	            	// Don't insert an empty array - we don't want it!
+	                if (!(is_array($result) && empty($result)))
+	                	$current[$tag] = $result;
+	                $repeated_tag_index[$tag.'_'.$level] = 1;
+	                if($priority == 'tag' and $attributes_data) $current[$tag. '_attr'] = $attributes_data;
+	
+	            } else { // If taken, put all things inside a list(array)
+	                if(isset($current[$tag][0]) and is_array($current[$tag])) { // If it is already an array...
+	
+	                    // ...push the new element into that array.
+	                    $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
+	                    
+	                    if($priority == 'tag' and $get_attributes and $attributes_data) {
+	                        $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
+	                    }
+	                    $repeated_tag_index[$tag.'_'.$level]++;
+	
+	                } else { // If it is not an array...
+	                    $current[$tag] = array($current[$tag],$result); // ...Make it an array using using the existing value and the new value
+	                    $repeated_tag_index[$tag.'_'.$level] = 1;
+	                    if($priority == 'tag' and $get_attributes) {
+	                        if(isset($current[$tag.'_attr'])) { // The attribute of the last(0th) tag must be moved as well
+	                            
+	                            $current[$tag]['0_attr'] = $current[$tag.'_attr'];
+	                            unset($current[$tag.'_attr']);
+	                        }
+	                        
+	                        if($attributes_data) {
+	                            $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
+	                        }
+	                    }
+	                    $repeated_tag_index[$tag.'_'.$level]++; // 0 and 1 index is already taken
+	                }
+	            }
+	        } elseif($type == 'close') { // End of tag '</tag>'
+	            $current = &$parent[$level-1];
+	        }
+	    }
+	    return($xml_array);
+	}  
+	
+	/**
+	* Converts an array to XML. This is the inverse to xml2array(). Values
+	* are automatically escaped with htmlentities(), so you don't need to escape 
+	* values ahead of time. If you have, just set the third parameter to false.
+	* This is an all-or-nothing deal.
+	*
+	* @param mixed $arr The associative to convert to an XML fragment
+	* @param string $indent (Optional) Starting identation of each element
+	* @param string $escape (Optional) Determines whether or not to escape a text node.
+	* @return string An XML fragment.
+	*/
+	function array2xml( $arr, $indent = '', $escape = true )
+	{
+		$buff = '';
+		
+		foreach ( $arr as $k => $v )
+		{
+			if ( !is_array( $v ) )
+				$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</$k>\n";
+			else
+			{
+				/*
+				Encountered a list. The primary difference between the two branches is that
+				in the 'if' branch, a $k element is generated for each item in $v, whereas
+				in the 'else' branch, a single $k element encapsulates $v.
+				*/
+				
+				if ( isset( $v[0] ) )
+				{
+					foreach ( $v as $_k => $_v )
+					{
+						if ( is_array( $_v ) )
+					 		$buff .= "$indent<$k>\n" . $this->array2xml( $_v, $indent . "\t", $escape ) . "$indent</$k>\n";
+						else
+							$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</$k>\n";
+					}
+				}
+				else
+					$buff .= "$indent<$k>\n" . $this->array2xml( $v, $indent . "\t", $escape ) . "$indent</$k>\n";
+			}
+		}
+		
+		return $buff;
+	}
+}	
+
+/**
+* The new CampaignMonitor class that now extends from CMBase. This should be 
+* backwards compatible with the original (PHP5) version.
+*
+* @package CampaignMonitorLib
+* @subpackage CampaignMonitor
+* @version 1.4.3
+* @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net) and 
+* Campaign Monitor <support@campaignmonitor.com> 
+* @copyright 2007-2009
+* @see http://www.campaignmonitor.com/api/
+*/
+class CampaignMonitor extends CMBase
+{
+	var /*@ protected */
+		$url = 'http://api.createsend.com/api/api.asmx',
+		$soapAction = 'http://api.createsend.com/api/';
+	
+	/**
+	* @param string $api Your API key.
+	* @param string $client The default ClientId you're going to work with.
+	* @param string $campaign The default CampaignId you're going to work with.
+	* @param string $list The default ListId you're going to work with.
+	* @param string $method Determines request type. Values are either get, post, or soap.
+	*/
+	
+	function CampaignMonitor( $api = null, $client = null, $campaign = null, $list = null, $method = 'get' )
+	{
+		CMBase::CMBase( $api, $client, $campaign, $list, $method );
 	}
 
 	/**
@@ -540,428 +783,6 @@ class CMBase
 		
 		return $nlist;
 	}
-}
-
-/**
-* XMLArrayInstance, xml2array() and array2xml() will be used to convert data
-* between XML and Array. We're using a class because that is the only way we can
-* safely use xml_parse() and other related functions (the alternative is to use
-* $GLOBALS to hold data).
-* 
-* XMLArrayInstance can be initialized to start processing from a specific path
-* in the XML. In the case of Campaign Monitor, we want to start from 
-* '/soap:Envelope/soap:Body', which is the default 2nd parameter for xml2array().
-*
-* @package CampaignMonitorLib
-* @subpackage CMBase
-*/
-
-class XMLArrayInstance
-{
-	var $root = '/';
-	var $rootStart = 0;
-	var $stack = array();
-	var $stack_path = '';
-	var $stack_sz = 0;
-	var $array = array();
-	var $arrCurrent = null;
-	var $inRoot = false;
-	var $counter = 0;
-	
-	var $stack_count = array();
-	var $stack_prefix = '/';
-	var $data_buffer = array();
-	
-	/**
-	* @param string $root An absolute path that points to where XML data
-	*        should start being converted to an array. Do not add an ending '/'.
-	*/
-	
-	function XMLArrayInstance( $root = null )
-	{
-		if ( $root != null && $root != '/' )
-		{
-			$this->root = $root;
-			$this->rootStart = substr_count( $root, '/' );
-			$this->stack_prefix = $root . '/';
-		}
-	}
-	
-	function start( $parser, $ele, $atts )
-	{
-		$this->stack[] = $ele;
-		$this->stack_path = '/' . implode( '/', $this->stack );
-		$this->stack_sz++;
-		
-		if ( !isset( $this->stack_count[$this->stack_path] ) )
-			$this->stack_count[$this->stack_path] = -1;
-		
-		$this->stack_count[$this->stack_path]++;
-		$this->data_buffer[$this->stack_path] = '';
-	}
-	
-	function data( $parser, $data )
-	{
-		$data = trim( $data );
-		
-		// if $data is empty or we're not within start path, skip
-		if ( (strpos( $this->stack_path, $this->root ) !== 0) || $data == '' )
-			return;
-		
-		// delay inserting the data, because the parser handles entities as a
-		// separate call. that meant that before buffering data, a simple text node
-		// would be broken up into multiple parts because of the entities.
-		$this->data_buffer[$this->stack_path] .= $data;
-	}
-	
-	function end( $parser, $ele )
-	{
-		if ( $this->data_buffer[$this->stack_path] != '' )
-			$this->setArrValue( $this->data_buffer[$this->stack_path] );
-		
-		array_pop( $this->stack );
-		$this->stack_path = '/' . implode( '/', $this->stack );
-		$this->stack_sz--;
-	}
-	
-	function setArrValue( $data )
-	{
-		// iterate through $arr to find the right element and populate it.
-		// if the element doesn't exist, set it as a scalar. otherwise, 
-		// convert it to an array first and then append the value.
-		
-		$ptr = & $this->array;
-		
-		// the depth to insert the value at
-		$depth = $this->stack_sz - 1;
-		$sep = '';
-		$partial = '';
-		
-		for ( $i = $this->rootStart; $i < $this->stack_sz; $i++ )
-		{
-			$key = $this->stack[$i];
-			$partial .= $sep . $key;
-			$sep = '/';
-			$_c = $this->stack_count[$this->stack_prefix . $partial];
-			
-			//echo "$key : [{$this->stack_prefix}]$partial\n";
-			
-			// this current path doesn't exist. either we're going deeper
-			// into the XML (and the paths haven't been created yet), or the
-			// node we're on hasn't been created.
-			
-			if ( !isset( $ptr[$key] ) )
-			{
-				if ( $i == $depth )
-					$ptr[$key] = $data;
-				else
-					$ptr[$key] = array();
-				
-				$ptr = & $ptr[$key];
-			}
-			elseif ( $i < $depth )
-			{
-				// if the absolute path of this node has more than one occurrence, $_c > 0.
-				// if that's the case, then, we need to test if the node is currently a hash
-				// or a list. if it's a hash, convert it to a list. then, check that the list
-				// item exists (create it if it doesn't).
-				
-				// if it's just a single occurrence, set the pointer to the hash.
-				
-				if ( $_c > 0 )
-				{
-					if ( !isset( $ptr[$key][0] ) )
-					{
-						$tmp = $ptr[$key];
-						$ptr[$key] = array( $tmp );
-					}
-					
-					if ( !isset( $ptr[$key][$_c] ) )
-						$ptr[$key][$_c] = array();
-					
-					$ptr = & $ptr[$key][$_c];
-				}
-				else
-					$ptr = & $ptr[$key];
-			}
-			elseif ( $i == $depth )
-			{
-				// the current node exists. but, since it's not an array, we need
-				// to convert it first.
-				
-				if ( !is_array( $ptr[$key] ) )
-				{
-					$tmp = $ptr[$key];
-					$ptr[$key] = array( $tmp );
-				}
-				elseif ( !isset( $ptr[$key][0] ) )
-				{
-					$tmp = $ptr[$key];
-					$ptr[$key] = array( $tmp );
-				}
-				
-				$ptr[$key][] = $data;
-				$ptr = & $ptr[$key];
-			}
-		}
-	}
-}
-
-/**
- * Convert the given XML $contents into a PHP array. Based on code from:
- * http://www.bin-co.com/php/scripts/xml2array/
- * @param $contents The XML to be converted.
- * @param $root The path of the root element within the XML at which 
- * conversion should occur.
- * @param $charset The character set to use.
- * @param $get_attributes 0 or 1. If this is 1 the function will get the 
- * attributes as well as the tag values - this results in a different array 
- * structure in the return value.
- * @param $priority Can be 'tag' or 'attribute'. This will change the structure
- * of the resulting array. For 'tag', the tags are given more importance.
- * @return A PHP array representing the XML $contents passed in
- */
-function xml2array(
-	$contents, 
-	$root = '/',
-	$charset = 'utf-8',
-	$get_attributes = 0, 
-	$priority = 'tag') {
-
-	if(!$contents)
-		return array();
-
-    if(!function_exists('xml_parser_create'))
-        return array();
-
-    // Get the PHP XML parser
-    $parser = xml_parser_create($charset);
-
-    // Attempt to find the last tag in the $root path and use this as the 
-    // start/end tag for the process of extracting the xml
-	// Example input: '/soap:Envelope/soap:Body'
-
-    // Toggles whether the extraction of xml into the array actually occurs
-    $extract_on = TRUE;
-    $start_and_end_element_name = '';
-	$root_elements = explode('/', $root);
-	if ($root_elements != FALSE && 
-		!empty($root_elements)) {
-		$start_and_end_element_name = trim(end($root_elements));
-		if (!empty($start_and_end_element_name))
-			$extract_on = FALSE;
-	}
-
-    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8"); # http://minutillo.com/steve/weblog/2004/6/17/php-xml-and-character-encodings-a-tale-of-sadness-rage-and-data-loss
-    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
-    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
-    xml_parse_into_struct($parser, trim($contents), $xml_values);
-    xml_parser_free($parser);
-
-    if(!$xml_values) 
-    	return;
-
-    $xml_array = array();
-    $parents = array();
-    $opened_tags = array();
-    $arr = array();
-
-    $current = &$xml_array; // Reference
-
-    // Go through the tags.
-    $repeated_tag_index = array(); // Multiple tags with same name will be turned into an array
-    foreach($xml_values as $data) {
-        unset($attributes,$value); // Remove existing values, or there will be trouble
-
-        // This command will extract these variables into the foreach scope
-        // tag(string), type(string), level(int), attributes(array).
-        extract($data);
-
-        if (!empty($start_and_end_element_name) && 
-        	$tag == $start_and_end_element_name) {
-        	// Start at the next element (if looking at the opening tag), 
-        	// or don't process any more elements (if looking at the closing tag)...
-        	$extract_on = !$extract_on;
-        	continue;
-        }
-
-        if (!$extract_on)
-        	continue;
-        
-        $result = array();
-        $attributes_data = array();
-        
-        if(isset($value)) {
-            if($priority == 'tag') $result = $value;
-            else $result['value'] = $value; //Put the value in a assoc array if we are in the 'Attribute' mode
-        }
-
-        // Set the attributes too.
-        if(isset($attributes) and $get_attributes) {
-            foreach($attributes as $attr => $val) {
-                if($priority == 'tag') $attributes_data[$attr] = $val;
-                else $result['attr'][$attr] = $val; // Set all the attributes in a array called 'attr'
-            }
-        }
-
-        // See tag status and do the needed.
-        if($type == "open") {// The starting of the tag '<tag>'
-            $parent[$level-1] = &$current;
-            if(!is_array($current) or (!in_array($tag, array_keys($current)))) { //Insert New tag
-                $current[$tag] = $result;
-                if($attributes_data) $current[$tag. '_attr'] = $attributes_data;
-                $repeated_tag_index[$tag.'_'.$level] = 1;
-                $current = &$current[$tag];
-            } else { // There was another element with the same tag name
-                if(isset($current[$tag][0])) { // If there is a 0th element it is already an array
-                    $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
-                    $repeated_tag_index[$tag.'_'.$level]++;
-                } else { // This section will make the value an array if multiple tags with the same name appear together
-                    $current[$tag] = array($current[$tag],$result); // This will combine the existing item and the new item together to make an array
-                    $repeated_tag_index[$tag.'_'.$level] = 2;
-                    
-                    if(isset($current[$tag.'_attr'])) { // The attribute of the last(0th) tag must be moved as well
-                        $current[$tag]['0_attr'] = $current[$tag.'_attr'];
-                        unset($current[$tag.'_attr']);
-                    }
-                }
-                $last_item_index = $repeated_tag_index[$tag.'_'.$level]-1;
-                $current = &$current[$tag][$last_item_index];
-            }
-        } elseif($type == "complete") { // Tags that ends in 1 line '<tag />'
-            // See if the key is already taken.
-            if(!isset($current[$tag])) { //New Key
-            	// Don't insert an empty array - we don't want it!
-                if (!(is_array($result) && empty($result)))
-                	$current[$tag] = $result;
-                $repeated_tag_index[$tag.'_'.$level] = 1;
-                if($priority == 'tag' and $attributes_data) $current[$tag. '_attr'] = $attributes_data;
-
-            } else { // If taken, put all things inside a list(array)
-                if(isset($current[$tag][0]) and is_array($current[$tag])) { // If it is already an array...
-
-                    // ...push the new element into that array.
-                    $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
-                    
-                    if($priority == 'tag' and $get_attributes and $attributes_data) {
-                        $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
-                    }
-                    $repeated_tag_index[$tag.'_'.$level]++;
-
-                } else { // If it is not an array...
-                    $current[$tag] = array($current[$tag],$result); // ...Make it an array using using the existing value and the new value
-                    $repeated_tag_index[$tag.'_'.$level] = 1;
-                    if($priority == 'tag' and $get_attributes) {
-                        if(isset($current[$tag.'_attr'])) { // The attribute of the last(0th) tag must be moved as well
-                            
-                            $current[$tag]['0_attr'] = $current[$tag.'_attr'];
-                            unset($current[$tag.'_attr']);
-                        }
-                        
-                        if($attributes_data) {
-                            $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
-                        }
-                    }
-                    $repeated_tag_index[$tag.'_'.$level]++; // 0 and 1 index is already taken
-                }
-            }
-        } elseif($type == 'close') { // End of tag '</tag>'
-            $current = &$parent[$level-1];
-        }
-    }
-    return($xml_array);
-}  
-
-/**
-* Converts an array to XML. This is the inverse to xml2array(). Values
-* are automatically escaped with htmlentities(), so you don't need to escape 
-* values ahead of time. If you have, just set the third parameter to false.
-* This is an all-or-nothing deal.
-*
-* @param mixed $arr The associative to convert to an XML fragment
-* @param string $indent (Optional) Starting identation of each element
-* @param string $escape (Optional) Determines whether or not to escape a text node.
-* @return string An XML fragment.
-*/
-function array2xml( $arr, $indent = '', $escape = true )
-{
-	$buff = '';
-	
-	foreach ( $arr as $k => $v )
-	{
-		if ( !is_array( $v ) )
-			$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</$k>\n";
-		else
-		{
-			/*
-			Encountered a list. The primary difference between the two branches is that
-			in the 'if' branch, a $k element is generated for each item in $v, whereas
-			in the 'else' branch, a single $k element encapsulates $v.
-			*/
-			
-			if ( isset( $v[0] ) )
-			{
-				foreach ( $v as $_k => $_v )
-				{
-					if ( is_array( $_v ) )
-				 		$buff .= "$indent<$k>\n" . array2xml( $_v, $indent . "\t", $escape ) . "$indent</$k>\n";
-					else
-						$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</$k>\n";
-				}
-			}
-			else
-				$buff .= "$indent<$k>\n" . array2xml( $v, $indent . "\t", $escape ) . "$indent</$k>\n";
-		}
-	}
-	
-	return $buff;
-}
-
-
-
-
-
-/**
-* The new CampaignMonitor class that now extends from CMBase. This should be 
-* backwards compatible with the original (PHP5) version.
-* 
-* If you used the static functions convertXMLToArray() and convertArrayToXML() 
-* in other contexts, you'll need to replace them with xml2array() and array2xml().
-* They share the same core parameters, so this should be a simple 1-to-1 mapping.
-*
-* Of course, you could write the convert*() static methods back into the class
-* as wrappers for xml2array() and array2xml().
-*
-* @package CampaignMonitorLib
-* @subpackage CampaignMonitor
-* @version 1.4.2
-* @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
-* @copyright 2007-2009
-* @see http://www.campaignmonitor.com/api/
-*/
-
-// this assumes CMBase.php is in the same directory as this file
-//require_once( dirname( __FILE__ ) . '/CMBase.php' );
-
-class CampaignMonitor extends CMBase
-{
-	var /*@ protected */
-		$url = 'http://api.createsend.com/api/api.asmx'
-		, $soapAction = 'http://api.createsend.com/api/'
-	;
-	
-	/**
-	* @param string $api Your API key.
-	* @param string $client The default ClientId you're going to work with.
-	* @param string $campaign The default CampaignId you're going to work with.
-	* @param string $list The default ListId you're going to work with.
-	* @param string $method Determines request type. Values are either get, post, or soap.
-	*/
-	
-	function CampaignMonitor( $api = null, $client = null, $campaign = null, $list = null, $method = 'get' )
-	{
-		CMBase::CMBase( $api, $client, $campaign, $list, $method );
-	}
 	
 	/**
 	* @param string $email Email address.
@@ -989,10 +810,31 @@ class CampaignMonitor extends CMBase
 	{
 		return $this->subscriberAddWithCustomFields( $email, $name, $fields, $list_id, true );
 	}
-	
 
-	
-	/*
+	/**
+	 * Returns the details of a particular subscriber.
+	 * @param $list_id The ID of the list to which the subscriber belongs
+	 * @param $email The subscriber's email address
+	 * @return mixed A parsed response from the server, or null if something failed
+	 * @see http://www.campaignmonitor.com/api/method/subscribers-get-single-subscriber/
+	 */
+	function subscriberGetSingleSubscriber($list_id = null, $email)
+    {
+        if (!$list_id != null)
+            $list_id = $this->list_id;
+
+        return $this->makeCall( 
+        	'Subscribers.GetSingleSubscriber',
+            array(
+                'params' => array(
+                    'ListID' => $list_id,
+                    'EmailAddress' => $email
+                )
+            )
+        );
+    }	
+
+    /*
 	* A generic wrapper to feed Client.* calls.
 	*
 	* @param string $method The API method to call.
@@ -1256,6 +1098,34 @@ class CampaignMonitor extends CMBase
 	function userGetCountries()
 	{
 		return $this->makeCall( 'User.GetCountries' );
+	}
+	
+	/**
+	 * Gets the API key for a Campaign Monitor user, given site URL, username, 
+	 * password. If the user has not already had their API key generated at 
+	 * the time this method is called, the user’s API key will be generated 
+	 * and returned by this method.
+	 * 
+	 * @param $site_url The base URL of the site you use to login to 
+	 * Campaign Monitor. e.g. http://example.createsend.com/
+	 * @param $username The username you use to login to Campaign Monitor.
+	 * @param $password The password you use to login to Campaign Monitor.
+	 * @return mixed A parsed response from the server, or null if something 
+	 * failed.
+	 * @see http://www.campaignmonitor.com/api/method/user-getapikey/
+	 */
+	function userGetApiKey($site_url, $username, $password)
+	{
+		return $this->makeCall(
+			'User.GetApiKey', 
+			array(
+				'params' => array(
+					'SiteUrl' => $site_url,
+					'Username' => $username,
+					'Password' => $password,
+				)
+			)
+		);
 	}
 	
 	/**
@@ -1526,6 +1396,24 @@ class CampaignMonitor extends CMBase
 		return $this->makeCall( 'List.GetDetail', array(
 			'params' => array(
 				'ListID' => $list_id
+				)
+			)
+		);
+	}
+
+	/**
+	 * Gets statistics for a subscriber list
+	 * @param $list_id The ID of the list whose statistics will be returned.
+	 * @return mixed A parsed response from the server, or null if something 
+	 * @see http://www.campaignmonitor.com/api/method/list-getstats/
+	 */
+	function listGetStats($list_id)
+	{
+		return $this->makeCall(
+			'List.GetStats',
+			array(
+				'params' => array(
+					'ListID' => $list_id
 				)
 			)
 		);
