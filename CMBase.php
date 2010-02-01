@@ -51,7 +51,7 @@
 *
 * @package CampaignMonitorLib
 * @subpackage CMBase
-* @version 1.4.3
+* @version 1.4.4
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
 * @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
@@ -493,8 +493,11 @@ class CMBase
 		
 		foreach ( $arr as $k => $v )
 		{
+			// Dreamweaver has a bug which causes "/" to be stripped out of "</$k>"
+			// when editing PHP files, so variable parsing is not longer being used
+			// where a forward slash is required before the variable
 			if ( !is_array( $v ) )
-				$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</$k>\n";
+				$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</" . $k . ">\n";
 			else
 			{
 				/*
@@ -508,13 +511,13 @@ class CMBase
 					foreach ( $v as $_k => $_v )
 					{
 						if ( is_array( $_v ) )
-					 		$buff .= "$indent<$k>\n" . $this->array2xml( $_v, $indent . "\t", $escape ) . "$indent</$k>\n";
+					 		$buff .= "$indent<$k>\n" . $this->array2xml( $_v, $indent . "\t", $escape ) . "$indent</" . $k . ">\n";
 						else
-							$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</$k>\n";
+							$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</" . $k . ">\n";
 					}
 				}
 				else
-					$buff .= "$indent<$k>\n" . $this->array2xml( $v, $indent . "\t", $escape ) . "$indent</$k>\n";
+					$buff .= "$indent<$k>\n" . $this->array2xml( $v, $indent . "\t", $escape ) . "$indent</" . $k .">\n";
 			}
 		}
 		
@@ -528,7 +531,7 @@ class CMBase
 *
 * @package CampaignMonitorLib
 * @subpackage CampaignMonitor
-* @version 1.4.3
+* @version 1.4.4
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net) and 
 * Campaign Monitor <support@campaignmonitor.com> 
 * @copyright 2007-2009
