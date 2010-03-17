@@ -51,7 +51,7 @@
 *
 * @package CampaignMonitorLib
 * @subpackage CMBase
-* @version 1.4.4
+* @version 1.4.5
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
 * @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
@@ -531,7 +531,7 @@ class CMBase
 *
 * @package CampaignMonitorLib
 * @subpackage CampaignMonitor
-* @version 1.4.4
+* @version 1.4.5
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net) and 
 * Campaign Monitor <support@campaignmonitor.com> 
 * @copyright 2007-2009
@@ -1499,7 +1499,7 @@ class CampaignMonitor extends CMBase
 				'ClientID' => $client_id,
 				'TemplateName' => $template_name,
 				'HTMLPageURL' => $html_url,
-				'ZIPFileURL' => $zip_url,
+				'ZipFileURL' => $zip_url,
 				'ScreenshotURL' => $screenshot_url
 			))
 		);
