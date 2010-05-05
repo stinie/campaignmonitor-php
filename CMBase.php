@@ -497,7 +497,7 @@ class CMBase
 			// when editing PHP files, so variable parsing is not longer being used
 			// where a forward slash is required before the variable
 			if ( !is_array( $v ) )
-				$buff .= "$indent<$k>" . ($escape ? utf8_encode( $v ) : $v ) . "</" . $k . ">\n";
+				$buff .= "$indent<$k>" . ($escape ? utf8_encode( htmlspecialchars($v) ) : $v ) . "</" . $k . ">\n";
 			else
 			{
 				/*
@@ -513,7 +513,7 @@ class CMBase
 						if ( is_array( $_v ) )
 					 		$buff .= "$indent<$k>\n" . $this->array2xml( $_v, $indent . "\t", $escape ) . "$indent</" . $k . ">\n";
 						else
-							$buff .= "$indent<$k>" . ($escape ? utf8_encode( $_v ) : $_v ) . "</" . $k . ">\n";
+							$buff .= "$indent<$k>" . ($escape ? utf8_encode( htmlspecialchars($_v) ) : $_v ) . "</" . $k . ">\n";
 					}
 				}
 				else
