@@ -107,7 +107,7 @@ class CMBase
 		$this->method = $method;
 		$this->curlExists = function_exists( 'curl_init' ) && function_exists( 'curl_setopt' );
 	}
-	
+
 	/**
 	* The direct way to make an API call. This allows developers to include new API
 	* methods that might not yet have a wrapper method as part of the package.
@@ -173,7 +173,7 @@ class CMBase
 			if ( isset( $options['params'] ) )
 			{
 				foreach ( $options['params'] as $k => $v )
-					$postdata .= '&' . $k . '=' .rawurlencode(utf8_encode($v));
+					$postdata .= '&' . $k . '=' .rawurlencode($this->fixEncoding($v));
 			}
 			
 			if ( $this->method == 'get' )
@@ -309,6 +309,19 @@ class CMBase
 		}
 		else
 			return null;
+	}
+
+	/**
+	 * Encodes a string to UTF-8 only if needed 
+	 * @param $in_str String to potentially encode
+	 * @return UTF-8 encoded string
+	 */
+	function fixEncoding($in_str) { 
+		$cur_encoding = mb_detect_encoding($in_str);
+		if($cur_encoding == "UTF-8" && mb_check_encoding($in_str,"UTF-8"))
+			return $in_str; 
+		else 
+			return utf8_encode($in_str);
 	}
 
 	/**
@@ -475,7 +488,7 @@ class CMBase
 	    }
 	    return($xml_array);
 	}  
-	
+
 	/**
 	* Converts an array to XML. This is the inverse to xml2array(). Values
 	* are automatically escaped with htmlentities(), so you don't need to escape 
@@ -497,7 +510,7 @@ class CMBase
 			// when editing PHP files, so variable parsing is not longer being used
 			// where a forward slash is required before the variable
 			if ( !is_array( $v ) )
-				$buff .= "$indent<$k>" . ($escape ? utf8_encode( htmlspecialchars($v) ) : $v ) . "</" . $k . ">\n";
+				$buff .= "$indent<$k>" . ($escape ? $this->fixEncoding(htmlspecialchars($v)) : $v ) . "</" . $k . ">\n";
 			else
 			{
 				/*
@@ -513,7 +526,7 @@ class CMBase
 						if ( is_array( $_v ) )
 					 		$buff .= "$indent<$k>\n" . $this->array2xml( $_v, $indent . "\t", $escape ) . "$indent</" . $k . ">\n";
 						else
-							$buff .= "$indent<$k>" . ($escape ? utf8_encode( htmlspecialchars($_v) ) : $_v ) . "</" . $k . ">\n";
+							$buff .= "$indent<$k>" . ($escape ? $this->fixEncoding(htmlspecialchars($_v)) : $_v ) . "</" . $k . ">\n";
 					}
 				}
 				else
