@@ -51,7 +51,7 @@
 *
 * @package CampaignMonitorLib
 * @subpackage CMBase
-* @version 1.4.5
+* @version 1.4.7
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net)
 * @copyright 2007-2009
 * @see http://www.campaignmonitor.com/api/
@@ -544,7 +544,7 @@ class CMBase
 *
 * @package CampaignMonitorLib
 * @subpackage CampaignMonitor
-* @version 1.4.5
+* @version 1.4.7
 * @author Kaiser Shahid <knitcore@yahoo.com> (www.qaiser.net) and 
 * Campaign Monitor <support@campaignmonitor.com> 
 * @copyright 2007-2009
